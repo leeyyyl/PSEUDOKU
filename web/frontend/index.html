@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>PSEUDOKU</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 24px;
+			background: #f3f7ff;
+			color: #0d2b5b;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+		}
+		h2 { margin: 0 0 16px 0; text-align: center; }
+		.container {
+			display: flex;
+			gap: 24px;
+			align-items: flex-start;
+			flex-wrap: wrap;
+			justify-content: center;
+		}
+		.panel {
+			background: #ffffff;
+			border: 1px solid #c7d7f2;
+			border-radius: 8px;
+			padding: 16px;
+			box-shadow: 0 2px 8px rgba(13, 43, 91, 0.08);
+		}
+		.keypad {
+			display: flex;
+			gap: 6px;
+			margin-top: 12px;
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+		.keypad button {
+			width: 28px;
+			height: 28px;
+			padding: 0;
+			font-size: 14px;
+			border-radius: 6px;
+		}
+		.panel-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 12px;
+			gap: 12px;
+		}
+		.panel-header select {
+			max-width: 160px;
+		}
+		.row { margin-bottom: 12px; }
+		label { display: inline-block; width: 120px; font-weight: 600; }
+		input, select {
+			width: 140px;
+			padding: 6px 8px;
+			border: 1px solid #9bb6e5;
+			border-radius: 4px;
+			box-sizing: border-box;
+		}
+		button {
+			padding: 8px 16px;
+			background: #1e5edb;
+			color: #fff;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+		button:hover { background: #174cb2; }
+		pre {
+			background: #ffffff;
+			border: 1px solid #c7d7f2;
+			border-radius: 8px;
+			padding: 12px;
+			overflow: auto;
+			width: min(900px, 100%);
+			box-sizing: border-box;
+		}
+		#output {
+			width: min(700px, 100%);
+			box-sizing: border-box;
+			text-align: center;
+			font-weight: 600;
+			white-space: pre-line;
+			margin-top: 16px;
+			padding: 10px 12px;
+			font-size: 14px;
+		}
+		#subcoloniesRow { display: none; }
+		.grid {
+			display: inline-grid;
+			grid-template-columns: repeat(9, 1fr);
+			gap: 0;
+			background-color: #ffffff;
+			border: 2px solid #0d2b5b;
+			box-sizing: border-box;
+			width: 100%;
+			max-width: 360px;
+		}
+		.cell {
+			width: 100%;
+			aspect-ratio: 1 / 1;
+			text-align: center;
+			font-size: 20px;
+			border: none;
+			color: #0d2b5b;
+			background: #ffffff;
+			border-radius: 0;
+			box-sizing: border-box;
+			cursor: pointer;
+			caret-color: transparent;
+		}
+		.cell.invalid { border-color: #d00; background: #ffecec; }
+		.cell:hover { background: #e8f1ff; }
+		.cell:focus { outline: none; }
+		.cell.selected { background: #cfe0ff; }
+		.grid .cell:nth-child(9n + 4),
+		.grid .cell:nth-child(9n + 7) { border-left: 2px solid #0d2b5b; }
+		.grid .cell:nth-child(n+28):nth-child(-n+36),
+		.grid .cell:nth-child(n+55):nth-child(-n+63) { border-top: 2px solid #0d2b5b; }
+		@media (max-width: 900px) {
+			.container { flex-direction: column; }
+		}
+		@media (max-width: 600px) {
+			body { margin: 12px; }
+			.panel { padding: 12px; }
+			label { width: auto; display: block; margin-bottom: 6px; }
+			input, select { width: 100%; }
+			.grid { max-width: none; }
+			.cell {
+				font-size: 18px;
+			}
+			.panel-header {
+				flex-direction: column;
+				align-items: flex-start;
+			}
+			.panel-header select {
+				width: 100%;
+				max-width: none;
+			}
+		}
+		@media (max-width: 380px) {
+			.cell {
+				font-size: 16px;
+			}
+		}
+	</style>
+</head>
+<body>
+	<h2>PSEUDOKU</h2>
+	<div class="container">
+		<div class="panel">
+			<div class="panel-header">
+				<label>Puzzle</label>
+				<select id="sampleSelect" aria-label="Sample puzzles">
+					<option value="" selected>Choose Sample</option>
+					<option value="9x9hard_1">9x9hard_1</option>
+					<option value="9x9hard_2">9x9hard_2</option>
+					<option value="9x9hard_3">9x9hard_3</option>
+					<option value="9x9hard_4">9x9hard_4</option>
+					<option value="9x9hard_5">9x9hard_5</option>
+					<option value="9x9hard_6">9x9hard_6</option>
+					<option value="9x9hard_7">9x9hard_7</option>
+					<option value="9x9hard_8">9x9hard_8</option>
+					<option value="9x9hard_9">9x9hard_9</option>
+					<option value="9x9hard_10">9x9hard_10</option>
+				</select>
+			</div>
+			<div class="row" style="text-align: center;">
+				<div id="grid" class="grid" aria-label="Sudoku grid"></div>
+			</div>
+			<div class="row">
+				<div class="keypad" id="keypad" aria-label="Number keypad">
+				<button type="button" data-key="1">1</button>
+				<button type="button" data-key="2">2</button>
+				<button type="button" data-key="3">3</button>
+				<button type="button" data-key="4">4</button>
+				<button type="button" data-key="5">5</button>
+				<button type="button" data-key="6">6</button>
+				<button type="button" data-key="7">7</button>
+				<button type="button" data-key="8">8</button>
+				<button type="button" data-key="9">9</button>
+				<button type="button" data-key="clear">X</button>
+				</div>
+			</div>
+			<noscript>
+				<div>Please enable JavaScript to view the grid.</div>
+			</noscript>
+		</div>
+		<div class="panel">
+			<div class="row">
+				<label>Algorithm</label>
+				<select id="alg">
+					<option value="0">Alg 0 (ACS)</option>
+					<option value="1">Alg 1 (Backtracking)</option>
+					<option value="2">Alg 2 (Parallel ACS)</option>
+				</select>
+			</div>
+			<div class="row" id="subcoloniesRow">
+				<label>Threads</label>
+				<input id="subcolonies" type="number" min="1" value="4" />
+			</div>
+			<div class="row" id="antsRow">
+				<label>Ants</label>
+				<input id="ants" type="number" min="1" value="10" />
+			</div>
+			<div class="row" id="timeoutRow">
+				<label>Timeout</label>
+				<input id="timeout" type="number" min="1" value="5" />
+			</div>
+			<div class="row">
+				<button id="solveBtn">Solve</button>
+				<button id="resetBtn" type="button">Reset</button>
+			</div>
+		</div>
+	</div>
+	<div id="output" class="panel">Ready.</div>
+
+	<script>
+		(function () {
+			var gridEl = document.getElementById("grid");
+			var algSelect = document.getElementById("alg");
+			var subcoloniesRow = document.getElementById("subcoloniesRow");
+			var antsRow = document.getElementById("antsRow");
+			var timeoutRow = document.getElementById("timeoutRow");
+			var sampleSelect = document.getElementById("sampleSelect");
+			if (algSelect && subcoloniesRow) {
+				var updateVisibility = function () {
+					var alg = Number(algSelect.value);
+					var showOnlyTimeout = alg === 1;
+					subcoloniesRow.style.display = showOnlyTimeout ? "none" : (alg === 2 ? "block" : "none");
+					if (antsRow) {
+						antsRow.style.display = showOnlyTimeout ? "none" : "block";
+					}
+					if (timeoutRow) {
+						timeoutRow.style.display = "block";
+					}
+				};
+				updateVisibility();
+				algSelect.addEventListener("change", updateVisibility);
+			}
+			if (!gridEl || gridEl.children.length > 0) return;
+			var defaultGrid = Array.from({ length: 9 }, function () {
+				return Array(9).fill(0);
+			});
+			for (var r = 0; r < 9; r += 1) {
+				for (var c = 0; c < 9; c += 1) {
+					var input = document.createElement("input");
+					input.type = "text";
+					input.inputMode = "numeric";
+					input.maxLength = 1;
+					input.className = "cell";
+					input.dataset.row = String(r);
+					input.dataset.col = String(c);
+					var value = defaultGrid[r][c];
+					input.value = value > 0 ? String(value) : "";
+					gridEl.appendChild(input);
+				}
+			}
+			var applyPuzzle = function (puzzle) {
+				if (!gridEl || !puzzle || puzzle.length !== 81) return;
+				var cells = gridEl.querySelectorAll(".cell");
+				for (var i = 0; i < cells.length && i < puzzle.length; i += 1) {
+					var ch = puzzle[i];
+					cells[i].value = ch === "." ? "" : ch;
+				}
+			};
+			var loadSample = function (name) {
+				if (!name) return;
+				fetch("/sample/" + name)
+					.then(function (resp) { return resp.json(); })
+					.then(function (data) {
+						if (data && data.puzzle) {
+							applyPuzzle(data.puzzle);
+							var invalids = gridEl.querySelectorAll(".cell.invalid");
+							for (var i = 0; i < invalids.length; i += 1) {
+								invalids[i].classList.remove("invalid");
+							}
+							sampleSelect.value = "";
+						}
+					})
+					.catch(function () {});
+			};
+			if (sampleSelect) {
+				sampleSelect.addEventListener("change", function () {
+					loadSample(sampleSelect.value);
+				});
+				sampleSelect.addEventListener("click", function () {
+					loadSample(sampleSelect.value);
+				});
+			}
+		})();
+	</script>
+	<script>
+		(function () {
+			var script = document.createElement("script");
+			script.src = "/static/app.js?v=" + Date.now();
+			script.defer = true;
+			script.onerror = function () {
+				var alt = document.createElement("script");
+				alt.src = "./static/app.js?v=" + Date.now();
+				alt.defer = true;
+				alt.onerror = function () {
+					console.error("Failed to load app.js");
+				};
+				document.body.appendChild(alt);
+			};
+			document.body.appendChild(script);
+		})();
+	</script>
+</body>
+</html>
