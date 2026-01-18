@@ -185,6 +185,10 @@ function normalizeSolution(solution) {
 	return "";
 }
 
+function normalizePuzzle(puzzle) {
+	return normalizeSolution(puzzle);
+}
+
 function applySolution(solution) {
 	const normalized = normalizeSolution(solution);
 	if (!normalized) return;
@@ -256,7 +260,11 @@ async function loadSample(name) {
 			output.textContent = JSON.stringify(data, null, 2);
 			return;
 		}
-		baselinePuzzle = data.puzzle || "";
+		baselinePuzzle = normalizePuzzle(data.puzzle || "");
+		if (!baselinePuzzle) {
+			output.textContent = `Sample invalid: ${data.name}`;
+			return;
+		}
 		applySolution(baselinePuzzle);
 		clearInvalidMarks();
 		if (sampleSelect) {

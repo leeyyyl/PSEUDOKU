@@ -262,10 +262,12 @@
 				}
 			}
 			var applyPuzzle = function (puzzle) {
-				if (!gridEl || !puzzle || puzzle.length !== 81) return;
+				if (!gridEl || !puzzle) return;
+				var matches = String(puzzle).match(/[1-9.]/g) || [];
+				if (matches.length !== 81) return;
 				var cells = gridEl.querySelectorAll(".cell");
 				for (var i = 0; i < cells.length && i < puzzle.length; i += 1) {
-					var ch = puzzle[i];
+					var ch = matches[i];
 					cells[i].value = ch === "." ? "" : ch;
 				}
 			};
